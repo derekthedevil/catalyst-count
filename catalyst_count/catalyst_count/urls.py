@@ -27,4 +27,5 @@ urlpatterns = [
     path("",views.home),
     path('upload', views.upload,name="upload"),
     path('users', views.all_users,name="all_users"),
+    path('api/get-result', views.return_result),
 ]

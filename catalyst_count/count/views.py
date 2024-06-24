@@ -1,8 +1,12 @@
 from django.shortcuts import render,redirect,HttpResponse
 from django.contrib.auth.models import User
-from django.contrib import messages
 from django.contrib.auth import login,authenticate,logout
 from count.models import Company
+from .serilizers import CompanySerializer
+from rest_framework.response import Response
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from django.views.decorators.csrf import csrf_exempt
 import os
 import csv
 
@@ -53,14 +57,24 @@ def user_logout(request):
     return redirect('/login')
 
 def query_builder(request):
+    return render(request, 'query.html')
+
+
+
+@api_view(['GET'])
+@csrf_exempt
+def return_result(request):
+    keyword = request.GET.get("keyword")
     industry = request.GET.get('industry')
     year = request.GET.get('year')
     city = request.GET.get('city')
     state = request.GET.get('state')
     country = request.GET.get('country')
-    employees_from = request.GET.get('employeesMin')
-    employees_to = request.GET.get('employeesMax')
+    employees_from = request.GET.get('employeeMin')
+    employees_to = request.GET.get('employeeMax')
     companies = Company.objects.all()
+    if keyword:
+        companies = companies.filter(name__icontains=keyword)
     if industry:
         companies = companies.filter(industry__icontains=industry)
     if year:
@@ -72,11 +86,12 @@ def query_builder(request):
     if country:
         companies = companies.filter(country__icontains=country)
     if employees_from:
-        companies = companies.filter(employees__gte=employees_from)
+        companies = companies.filter(current_employee_estimate__gte=employees_from)
     if employees_to:
-        companies = companies.filter(employees__lte=employees_to)
-    messages.success(request, companies.count())
-    return render(request, 'query.html')
+        companies = companies.filter(total_employee_estimate__lte=employees_to)
+    serializers = CompanySerializer(companies,many=True)
+    print(len(serializers.data))
+    return JsonResponse({"data":len(serializers.data)})
 
 def all_users(request):
     data ={}
@@ -102,11 +117,11 @@ def upload(request):
                 locality = row.get('locality', '')
                 if locality:
                     city_state = locality.split(',')[:2]
-                    city = city_state[0].strip() if len(city_state) > 0 else 'Unknown'
-                    state = city_state[1].strip() if len(city_state) > 1 else 'Unknown'
+                    city = city_state[0].strip() if len(city_state) > 0 else ''
+                    state = city_state[1].strip() if len(city_state) > 1 else ''
                 else:
-                    city = 'Unknown'
-                    state = 'Unknown'
+                    city = ''
+                    state = ''
                 try:
                     year_founded = int(float(row.get('year founded', 0)))
                 except ValueError:
@@ -128,4 +143,6 @@ def upload(request):
         return redirect('/')
     
 def home(request):
+    if not request.user.is_authenticated:
+        return redirect('/login')
     return render(request,"home.html")

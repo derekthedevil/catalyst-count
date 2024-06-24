@@ -25,6 +25,10 @@
             <div class="mb-3">
                 <input type="file" name="file" class="form-control" required>
             </div>
+            <div class="mb-3">
+                <span id="writting"></span>
+                <progress id="fileProgress" value="0" max="100" style="width: 100%"></progress>
+            </div>
             <button type="submit" class="btn btn-primary">Upload</button>
         </form>
     </div>
@@ -32,5 +36,27 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+    <script>
+        // Function to track file upload progress
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            var progressBar = document.getElementById('fileProgress');
+            progressBar.value = 0;
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', this.action, true);
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    var percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.value = percentComplete;
+                    document.getElementById("writting").innerHTML = percentComplete + "% uploaded"
+                }
+                if (percentComplete == 100){
+                    document.getElementById("writting").innerHTML = "writing to database please wait ,you will be redirected after this is complete"
+                }
+            };
+            xhr.send(new FormData(this));
+            
+        });
+    </script>
 </body>
 </html>
